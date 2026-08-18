@@ -1,17 +1,35 @@
 # Railway's edge terminates TLS and forwards plain HTTP to {$PORT}; this
-# instance only routes by path. MONOLITH_HOST is the monolith service's
-# private domain (set it from a Railway reference variable).
+# instance serves the SPA bundle and routes by path. The three *_HOST
+# variables are the backend services' private domains (set them from Railway
+# reference variables). The frontend calls same-origin /api/v1 and /ws — its
+# production defaults — so it needs no configuration of its own.
 {
 	auto_https off
 }
 
 :{$PORT} {
-	# WebSocket → the realtime port. The monolith runs with WS_URL=/ws so the
-	# dashboard connects here on the page's own origin; Caddy handles the
-	# upgrade automatically.
-	@ws path /ws /ws/*
-	reverse_proxy @ws {$MONOLITH_HOST}:20870
+	# WebSocket → realtime-service; Caddy handles the upgrade automatically.
+	handle /ws* {
+		reverse_proxy {$REALTIME_HOST}:20870
+	}
 
-	# Everything else — dashboard, /api/v1, /ping — → the gateway port.
-	reverse_proxy {$MONOLITH_HOST}:20714
+	# REST API + health → api-gateway.
+	handle /api/* {
+		reverse_proxy {$GATEWAY_HOST}:20714
+	}
+	handle /ping {
+		reverse_proxy {$GATEWAY_HOST}:20714
+	}
+
+	# Prometheus scrape endpoint → metrics-service.
+	handle /metrics/* {
+		reverse_proxy {$METRICS_HOST}:20850
+	}
+
+	# The dashboard bundle, with the SPA fallback for client-side routes.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
 }
