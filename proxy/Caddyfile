@@ -22,7 +22,7 @@
 	}
 
 	# Prometheus scrape endpoint → metrics-service.
-	handle /metrics/* {
+	handle /metrics* {
 		reverse_proxy {$METRICS_HOST}:20850
 	}
 

@@ -28,7 +28,7 @@ path, so the two version files at the repo root drive every build.
 | `metrics-service` | `services/metrics-service/Dockerfile` | no | |
 | `aggregate-worker` | `services/aggregate-worker/Dockerfile` | no | |
 | `realtime-service` | `services/realtime-service/Dockerfile` | no | |
-| `Postgres` | Railway's PostgreSQL | no | |
+| `Postgres` | image `timescale/timescaledb:latest-pg16` | no | Volume at `/var/lib/postgresql/data`, `PGDATA` in a subdirectory (see below). |
 | `Redis` | Railway's Redis | no | |
 
 ### Variables — every JVM service
@@ -39,7 +39,9 @@ path, so the two version files at the repo root drive every build.
 | `DATABASE_USER` | `${{Postgres.PGUSER}}` |
 | `DATABASE_PASSWORD` | `${{Postgres.PGPASSWORD}}` |
 | `REDIS_A_URL` | `redis://default:${{Redis.REDIS_PASSWORD}}@${{Redis.RAILWAY_PRIVATE_DOMAIN}}:6379` |
-| `REDIS_B_URL` | same as `REDIS_A_URL` (one instance serves both roles until volume justifies splitting) |
+| `REDIS_B_URL` | same as `REDIS_A_URL` |
+| `REDIS_C_URL` | same as `REDIS_A_URL` — all three roles point at the one instance by default; a hoster scales out by deploying another Redis and repointing the role's URL, nothing else |
+| `PORT` | the service's canonical port — **required**: Railway injects its own `PORT` otherwise and the services honor it, breaking the proxy's fixed upstream ports. gateway `20714`, probe-scheduler `20810`, result-ingestor `20820`, notification-dispatcher `20830`, email-service `20840`, metrics-service `20850`, aggregate-worker `20860`, realtime-service `20870` |
 | `PLATFORM_AES_KEY` | ONE generated secret shared by all services — **exactly 64 hex characters** (256-bit key). Permanent: it encrypts stored secrets and cannot be rotated; losing it orphans that data. Use a Railway shared variable. |
 | `DEPLOYMENT_ENV` | `production` — arms the startup guard that refuses placeholder secrets. |
 
@@ -93,6 +95,16 @@ that is a `--network-alias`), and it must be able to reach the agent inbound.
 With the scheduler on Railway that means network adjacency where the bare slug
 resolves (VPN/tailnet-style), not the open internet. Full flow:
 [tracedown.dev/install/agents](https://tracedown.dev/install/agents/).
+
+## Composition rules learned the hard way
+
+- **Never delete-and-recreate a referenced service**: `${{Service.VAR}}`
+  references bind to the service's identity, and replacing the service silently
+  breaks every reference project-wide (consumers see empty values and fall back
+  to `localhost`). Fix references or re-create the consumers' variables.
+- `railway.json` in this repo sets a generous on-failure restart policy: on
+  first boot every DB-dependent service fails fast until the gateway finishes
+  migrating, and the default retry cap strands them in `Crashed` before it does.
 
 ## Updating
 
