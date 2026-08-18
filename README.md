@@ -77,26 +77,21 @@ upgrades converge the same way.
 
 ## Probe agents
 
-Nothing probes without at least one enrolled agent, and the agent leg has a
-constraint to know about: the scheduler dials each agent over mutual TLS **at
-a hostname equal to its slug** (the certificate's identity). On a Docker
-network that is a `--network-alias`; on Railway, private domains have the form
-`<service>.railway.internal`, which cannot equal a bare slug.
+**The template deliberately contains no agent.** Agents are identity-bearing
+(one-time enrolment, mutual TLS, a certificate bound to their slug) and are
+placed where you need probes to run *from* — both are decisions, not
+provisioning. Nothing probes until you bootstrap at least one, manually:
 
-Practical options today:
+1. Mint a bootstrap token — `Settings → Agents` in the dashboard, or the
+   gateway CLI.
+2. Run the published `tracedown/tracedown-probe-agent` image with it, on a
+   host of your choosing.
 
-1. **Agent as a Railway service in the same project** named exactly the agent
-   slug, with the agent's advertised URI using the bare service name — works
-   only if the project's private DNS resolves bare service names (verify on a
-   test deploy before relying on it).
-2. **Agents next to a Docker host you control**, aliased to their slug — but
-   the scheduler must be able to reach them inbound, so this fits
-   VPN/tailnet-style connectivity between Railway and your network, not the
-   open internet.
-
-Enrolment itself is the standard flow: mint a token from the gateway service
-(`Settings → Agents` in the dashboard, or the CLI), run the published
-`tracedown/tracedown-probe-agent` image with it. See
+The one constraint to plan around: the scheduler dials each agent **at a
+hostname equal to its slug** (the certificate's identity — on a Docker network
+that is a `--network-alias`), and it must be able to reach the agent inbound.
+With the scheduler on Railway that means network adjacency where the bare slug
+resolves (VPN/tailnet-style), not the open internet. Full flow:
 [tracedown.dev/install/agents](https://tracedown.dev/install/agents/).
 
 ## Updating
