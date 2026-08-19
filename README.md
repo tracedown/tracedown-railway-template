@@ -63,11 +63,30 @@ database.)
 | `proxy` | `REALTIME_HOST` | `${{realtime-service.RAILWAY_PRIVATE_DOMAIN}}` |
 | `proxy` | `METRICS_HOST` | `${{metrics-service.RAILWAY_PRIVATE_DOMAIN}}` |
 
-Every other knob (email provider, retention, domain trust, rate limits, …) is
+### Email — configure a real provider
+
+Invites, password resets and notification email all go through
+`email-service`, and the default (`EMAIL_PROVIDER=console`) sends **nothing** —
+with `DEPLOYMENT_ENV=production` it doesn't even print the message bodies to
+the logs. Set a real provider on the `email-service` service:
+
+| Variable | Value |
+|---|---|
+| `EMAIL_PROVIDER` | `smtp`, `mailgun`, or `resend` |
+| `EMAIL_FROM_ADDRESS` | Sender address, e.g. `notifications@your-domain.tld` |
+| `EMAIL_FROM_NAME` | Sender display name |
+
+Then the provider's own variables:
+
+| Provider | Variables |
+|---|---|
+| `smtp` | `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT` (default `587`), `EMAIL_SMTP_USERNAME`, `EMAIL_SMTP_PASSWORD`, `EMAIL_SMTP_TLS_MODE` (`STARTTLS` default, `SMTPS`, `PLAIN`) |
+| `mailgun` | `EMAIL_MAILGUN_API_KEY`, `EMAIL_MAILGUN_DOMAIN`, `EMAIL_MAILGUN_REGION` (`us` default, `eu`) |
+| `resend` | `EMAIL_RESEND_API_KEY` |
+
+Every other knob (retention, domain trust, rate limits, …) is
 environment-driven — the full reference is at
 [tracedown.dev/install/configuration](https://tracedown.dev/install/configuration/).
-Without an email provider configured no mail leaves the system; invites and
-resets print to the service logs (`EMAIL_PROVIDER=console`).
 
 ## Startup ordering
 
