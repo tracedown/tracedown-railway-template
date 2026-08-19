@@ -16,3 +16,10 @@ RUN set -e; V="$(cat /tmp/FRONTEND_VERSION)"; \
     rm /tmp/dist.tar.gz
 
 COPY proxy/Caddyfile /etc/caddy/Caddyfile
+
+# A deployment can replace the SPA's runtime config wholesale by setting
+# RUNTIME_CONFIG_JS (JavaScript source, written to /config.js at container
+# start) — endpoints or boot behavior without rebuilding the bundle. Unset,
+# the bundle's own no-op config.js serves. The file is served no-cache, so a
+# variable change + redeploy is live on the next page load.
+CMD ["sh", "-c", "if [ -n \"$RUNTIME_CONFIG_JS\" ]; then printf '%s' \"$RUNTIME_CONFIG_JS\" > /srv/config.js; fi; exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile"]
