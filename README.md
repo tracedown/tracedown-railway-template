@@ -84,6 +84,31 @@ Then the provider's own variables:
 | `mailgun` | `EMAIL_MAILGUN_API_KEY`, `EMAIL_MAILGUN_DOMAIN`, `EMAIL_MAILGUN_REGION` (`us` default, `eu`) |
 | `resend` | `EMAIL_RESEND_API_KEY` |
 
+### Body storage — configure S3-compatible storage
+
+Saved response bodies default to the filesystem (`/data/bodies`), which on
+Railway only exists as the `gateway`'s private volume — the probe agents run
+elsewhere and cannot write into it, so **body saving needs an S3-compatible
+store** (Cloudflare R2, MinIO, AWS S3, Backblaze B2, …) to actually work on
+this stack. Set the same five variables on `gateway`, `result-ingestor` and
+`aggregate-worker`:
+
+| Variable | Value |
+|---|---|
+| `STORAGE_S3_ENDPOINT` | e.g. `https://<account>.r2.cloudflarestorage.com` |
+| `STORAGE_S3_ACCESS_KEY` / `STORAGE_S3_SECRET_KEY` | Credentials scoped to the bucket |
+| `STORAGE_S3_BUCKET` | The bucket |
+| `STORAGE_S3_PREFIX` | Key prefix within it (may be empty) |
+
+Agents get the matching `PROBE_AGENT_S3_*` settings
+(`STORAGE_BACKEND=s3`, `ENDPOINT_URL`, `ACCESS_KEY_ID`, `SECRET_ACCESS_KEY`,
+`BUCKET`, `PREFIX`, optional `REGION`) when you bootstrap them — the bucket
+and prefix **must match** the backend's: the ingestor refuses to touch any
+body URI outside the configured bucket+prefix, by design. Bodies are then
+served to the dashboard as short-lived presigned URLs.
+
+Without this, everything else works — bodies just aren't stored.
+
 Every other knob (retention, domain trust, rate limits, …) is
 environment-driven — the full reference is at
 [tracedown.dev/install/configuration](https://tracedown.dev/install/configuration/).
@@ -144,9 +169,8 @@ resolves (VPN/tailnet-style), not the open internet. Full flow:
 
 ## Notes
 
-- Saved response bodies live on the `gateway` volume at `/data/bodies`.
-  S3-compatible object storage is supported instead — see the configuration
-  reference.
+- Saved response bodies need S3-compatible object storage on this stack —
+  see [Body storage](#body-storage--configure-s3-compatible-storage).
 - If private-network connections between services fail on a fresh deploy,
   check Railway's current private-networking address family: the services
   bind IPv4 (`0.0.0.0`) by default.
