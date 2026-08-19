@@ -41,6 +41,7 @@ path, so the two version files at the repo root drive every build.
 | `REDIS_A_URL` | `redis://default:${{Redis.REDIS_PASSWORD}}@${{Redis.RAILWAY_PRIVATE_DOMAIN}}:6379` |
 | `REDIS_B_URL` | same as `REDIS_A_URL` |
 | `REDIS_C_URL` | same as `REDIS_A_URL` — all three roles point at the one instance by default; a hoster scales out by deploying another Redis and repointing the role's URL, nothing else |
+| `JAVA_TOOL_OPTIONS` | `-Xmx384m -XX:MaxMetaspaceSize=160m` for gateway and probe-scheduler, `-Xmx256m -XX:MaxMetaspaceSize=128m` for the rest — **required**: Railway's per-service memory limit is 8GB+ and an uncapped JVM sizes its heap from that ceiling, so the whole stack drifts to many GB instead of ~3 |
 | `PORT` | the service's canonical port — **required**: Railway injects its own `PORT` otherwise and the services honor it, breaking the proxy's fixed upstream ports. gateway `20714`, probe-scheduler `20810`, result-ingestor `20820`, notification-dispatcher `20830`, email-service `20840`, metrics-service `20850`, aggregate-worker `20860`, realtime-service `20870` |
 | `PLATFORM_AES_KEY` | ONE generated secret shared by all services — **exactly 64 hex characters** (256-bit key). Permanent: it encrypts stored secrets and cannot be rotated; losing it orphans that data. Use a Railway shared variable. |
 | `DEPLOYMENT_ENV` | `production` — arms the startup guard that refuses placeholder secrets. |
