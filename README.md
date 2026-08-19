@@ -1,5 +1,7 @@
 # Tracedown on Railway
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/X0JkJZ?referralCode=htSVme)
+
 Deploys [Tracedown](https://tracedown.dev) — self-hosted API monitoring — on
 [Railway](https://railway.com) as the full per-service stack: all eight JVM
 services, PostgreSQL, Redis, and a Caddy edge that serves the dashboard and
