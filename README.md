@@ -107,6 +107,22 @@ and prefix **must match** the backend's: the ingestor refuses to touch any
 body URI outside the configured bucket+prefix, by design. Bodies are then
 served to the dashboard as short-lived presigned URLs.
 
+For the dashboard to display bodies, the bucket needs a CORS policy
+allowing the dashboard's origin (the gateway hands the browser a presigned
+URL which it fetches directly):
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://<your-dashboard-domain>"],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["Content-Type", "Content-Length", "ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
 Without this, everything else works — bodies just aren't stored.
 
 Every other knob (retention, domain trust, rate limits, …) is
