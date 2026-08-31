@@ -30,7 +30,7 @@ path, so the two version files at the repo root drive every build.
 | `metrics-service` | `services/metrics-service/Dockerfile` | no | |
 | `aggregate-worker` | `services/aggregate-worker/Dockerfile` | no | |
 | `realtime-service` | `services/realtime-service/Dockerfile` | no | |
-| `Postgres` | image `timescale/timescaledb:latest-pg16` | no | Volume at `/var/lib/postgresql/data`, `PGDATA` in a subdirectory (see below). |
+| `Postgres` | image `postgres:16-alpine` | no | The schema is plain PostgreSQL — no extensions, no hypertables. Volume at `/var/lib/postgresql/data` with `PGDATA=/var/lib/postgresql/data/pgdata`: a Railway volume is never empty (`lost+found`) and `initdb` refuses a non-empty directory, so the data must live one level down. Start command `postgres -c max_connections=160` — see [Database connections](#database-connections). |
 | `Redis` | Railway's Redis | no | |
 
 ### Variables — every JVM service
@@ -50,6 +50,26 @@ path, so the two version files at the repo root drive every build.
 
 (`email-service` needs only the Redis and deployment variables — it holds no
 database.)
+
+### Database connections
+
+`postgres:16-alpine` defaults to `max_connections=100`, and this stack reserves
+**103** — so the default is not enough and the Postgres service needs the start
+command `postgres -c max_connections=160`.
+
+HikariCP fills its pool to maximum eagerly and holds the connections idle, so a
+pool size is a reservation, not a ceiling you might reach: gateway,
+result-ingestor and notification-dispatcher take 10 each; metrics-service,
+aggregate-worker and realtime-service pin 5 each in code; probe-scheduler
+derives its pool from its dispatch concurrency (50 workers + 8 headroom = 58),
+because a dispatch worker that cannot get a connection loses the probe outright
+rather than waiting. email-service holds none.
+
+`DB_POOL_SIZE` lowers it on gateway, result-ingestor, notification-dispatcher
+and probe-scheduler; the other three ignore it (their 5 is hard-coded). On
+probe-scheduler, lower `SCHEDULER_DISPATCH_WORKERS` alongside it — capping the
+pool below the workers just converts contention into 30-second connection
+timeouts and lost probes.
 
 ### Per-service additions
 
