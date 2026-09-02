@@ -37,9 +37,9 @@ path, so the two version files at the repo root drive every build.
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | `jdbc:postgresql://${{Postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{Postgres.PGDATABASE}}` |
-| `DATABASE_USER` | `${{Postgres.PGUSER}}` |
-| `DATABASE_PASSWORD` | `${{Postgres.PGPASSWORD}}` |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` — the Postgres service's own `DATABASE_URL` is overridden to the JDBC form `jdbc:postgresql://${{Postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{Postgres.POSTGRES_DB}}`, because the services hand it straight to HikariCP and Flyway; Railway's default `postgresql://user:pass@host/db` form is not a JDBC URL |
+| `DATABASE_USER` | `${{Postgres.POSTGRES_USER}}` |
+| `DATABASE_PASSWORD` | `${{Postgres.POSTGRES_PASSWORD}}` |
 | `REDIS_A_URL` | `redis://default:${{Redis.REDIS_PASSWORD}}@${{Redis.RAILWAY_PRIVATE_DOMAIN}}:6379` |
 | `REDIS_B_URL` | same as `REDIS_A_URL` |
 | `REDIS_C_URL` | same as `REDIS_A_URL` — all three roles point at the one instance by default; a hoster scales out by deploying another Redis and repointing the role's URL, nothing else |
