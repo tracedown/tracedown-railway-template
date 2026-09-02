@@ -30,7 +30,7 @@ path, so the two version files at the repo root drive every build.
 | `metrics-service` | `services/metrics-service/Dockerfile` | no | |
 | `aggregate-worker` | `services/aggregate-worker/Dockerfile` | no | |
 | `realtime-service` | `services/realtime-service/Dockerfile` | no | |
-| `Postgres` | image `postgres:16-alpine` | no | The schema is plain PostgreSQL — no extensions, no hypertables. Volume at `/var/lib/postgresql/data` with `PGDATA=/var/lib/postgresql/data/pgdata`: a Railway volume is never empty (`lost+found`) and `initdb` refuses a non-empty directory, so the data must live one level down. Start command `postgres -c max_connections=160` — see [Database connections](#database-connections). |
+| `Postgres` | Railway's Postgres template, image `ghcr.io/railwayapp-templates/postgres-ssl:16` | no | Plain PostgreSQL 16 — the schema uses no extensions and no hypertables, and the backend's Flyway/JDBC versions are validated against 16, so the image is pinned rather than following Railway's current default major. Volume at `/var/lib/postgresql/data` with `PGDATA` one level down (`/var/lib/postgresql/data/pgdata`): a Railway volume is never empty (`lost+found`) and `initdb` refuses a non-empty directory. Start command `/usr/local/bin/wrapper.sh postgres -p 5432 -c listen_addresses=* -c max_connections=160` — see [Database connections](#database-connections). |
 | `Redis` | Railway's Redis | no | |
 
 ### Variables — every JVM service
@@ -53,9 +53,20 @@ database.)
 
 ### Database connections
 
-`postgres:16-alpine` defaults to `max_connections=100`, and this stack reserves
-**103** — so the default is not enough and the Postgres service needs the start
-command `postgres -c max_connections=160`.
+Railway's Postgres image defaults to `max_connections=100`, and this stack
+reserves **103** — so the default is not enough and the Postgres service
+carries the start command
+
+```
+/usr/local/bin/wrapper.sh postgres -p 5432 -c listen_addresses=* -c max_connections=160
+```
+
+A custom start command on Railway **replaces the image entrypoint**, not just
+its arguments — a bare `postgres -c max_connections=160` runs as root and
+refuses to start. The image's `wrapper.sh` is that entrypoint: it provisions
+the TLS certificates, holds the volume lock across overlapping deploys and
+hands off to the official `docker-entrypoint.sh`, which drops to the
+`postgres` user. Prefix it explicitly.
 
 HikariCP fills its pool to maximum eagerly and holds the connections idle, so a
 pool size is a reservation, not a ceiling you might reach: gateway,
@@ -181,6 +192,17 @@ resolves (VPN/tailnet-style), not the open internet. Full flow:
 
 ## Composition rules learned the hard way
 
+- **Don't run TimescaleDB for a plain schema.** The demo stack once ran
+  `timescale/timescaledb:latest-pg16` for a hypertable plan that never
+  materialised; its `TS_TUNE_*` startup sized `shared_buffers` to a quarter of
+  the container limit and the database idled at ~0.9 GB — the largest service
+  in the project — while Railway's Postgres image serves the same data in
+  ~0.25 GB. Switched on 2026-09-02 by dump/restore; only `plpgsql` had ever
+  been installed.
+- **`max_connections` is a hard prerequisite**, not tuning: the same stack sat
+  at the image default of 100 for weeks and refused every 101st connection
+  with `too many clients already`. Check the start command survived any
+  Postgres service replacement.
 - **Never delete-and-recreate a referenced service**: `${{Service.VAR}}`
   references bind to the service's identity, and replacing the service silently
   breaks every reference project-wide (consumers see empty values and fall back
