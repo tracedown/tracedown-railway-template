@@ -30,7 +30,7 @@ path, so the two version files at the repo root drive every build.
 | `metrics-service` | `services/metrics-service/Dockerfile` | no | |
 | `aggregate-worker` | `services/aggregate-worker/Dockerfile` | no | |
 | `realtime-service` | `services/realtime-service/Dockerfile` | no | |
-| `Postgres` | Railway's Postgres template, image `ghcr.io/railwayapp-templates/postgres-ssl:16` | no | Plain PostgreSQL 16 — the schema uses no extensions and no hypertables, and the backend's Flyway/JDBC versions are validated against 16, so the image is pinned rather than following Railway's current default major. Volume at `/var/lib/postgresql/data` with `PGDATA` one level down (`/var/lib/postgresql/data/pgdata`): a Railway volume is never empty (`lost+found`) and `initdb` refuses a non-empty directory. Start command `/usr/local/bin/wrapper.sh postgres -p 5432 -c listen_addresses=* -c max_connections=160` — see [Database connections](#database-connections). |
+| `Postgres` | Railway's Postgres template, image `ghcr.io/railwayapp-templates/postgres-ssl:18` | no | Plain PostgreSQL 18 — the schema uses no extensions and no hypertables, and the backend's Flyway/JDBC versions are validated against 18, so the image is pinned rather than following Railway's current default major. Volume at `/var/lib/postgresql/data` with `PGDATA` one level down (`/var/lib/postgresql/data/pgdata`): a Railway volume is never empty (`lost+found`) and `initdb` refuses a non-empty directory. Start command `/usr/local/bin/wrapper.sh postgres -p 5432 -c listen_addresses=* -c max_connections=160` — see [Database connections](#database-connections). |
 | `Redis` | Railway's Redis | no | |
 
 ### Variables — every JVM service
