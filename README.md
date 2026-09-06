@@ -88,8 +88,9 @@ timeouts and lost probes.
 |---|---|---|
 | `gateway` | `JWT_SECRET` | Generated secret (any strong random string). |
 | `gateway` | `APP_URL` | `https://${{proxy.RAILWAY_PUBLIC_DOMAIN}}` — base URL for links in outgoing email. |
+| `gateway` | `GATEWAY_PUBLIC_URL` | `https://${{proxy.RAILWAY_PUBLIC_DOMAIN}}` — the address the dashboard prints as `PROBE_AGENT_SCHEDULER_URL` next to every agent bootstrap token. The proxy forwards the three enrolment paths to the gateway, so agents enrol through the public domain. |
 | `gateway` | `DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD` | The bootstrap admin created on first start against an empty database. Set your own before first deploy. |
-| `probe-scheduler` | `GATEWAY_URL` | `http://${{gateway.RAILWAY_PRIVATE_DOMAIN}}:20714` |
+| `probe-scheduler` | `GATEWAY_URL` | `https://${{proxy.RAILWAY_PUBLIC_DOMAIN}}` — the scheduler puts this into each health challenge, and the **agent** fetches its token from it. The agents live outside Railway, so the private domain would make every challenge fail and mark each agent down after two rounds. |
 | `proxy` | `GATEWAY_HOST` | `${{gateway.RAILWAY_PRIVATE_DOMAIN}}` |
 | `proxy` | `REALTIME_HOST` | `${{realtime-service.RAILWAY_PRIVATE_DOMAIN}}` |
 | `proxy` | `METRICS_HOST` | `${{metrics-service.RAILWAY_PRIVATE_DOMAIN}}` |
@@ -180,7 +181,9 @@ provisioning. Nothing probes until you bootstrap at least one, manually:
 
 1. Mint a bootstrap token — `Settings → Agents` in the dashboard, or the
    gateway CLI.
-2. Run the published `tracedown/tracedown-probe-agent` image with it, on a
+2. Run the published `tracedown/tracedown-probe-agent` image with it (the
+   dashboard prints the full command, with the public gateway address from
+   `GATEWAY_PUBLIC_URL` already filled in), on a
    host of your choosing.
 
 The one constraint to plan around: the scheduler dials each agent **at a

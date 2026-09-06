@@ -21,6 +21,22 @@
 		reverse_proxy {$GATEWAY_HOST}:20714
 	}
 
+	# Probe-agent enrolment and renewal, and the health-challenge token fetch.
+	# Agents run outside Railway (the template ships none) and reach the
+	# gateway only through this proxy: register carries a single-use bootstrap
+	# token, renew is gated on the agent's existing key, and the token path is
+	# a 30-second secret under an unguessable challenge id. Without these
+	# three routes an agent's registration lands on the SPA fallback below.
+	handle /internal/agents/register {
+		reverse_proxy {$GATEWAY_HOST}:20714
+	}
+	handle /internal/agents/renew {
+		reverse_proxy {$GATEWAY_HOST}:20714
+	}
+	handle /internal/health/token/* {
+		reverse_proxy {$GATEWAY_HOST}:20714
+	}
+
 	# Prometheus scrape endpoint → metrics-service.
 	handle /metrics* {
 		reverse_proxy {$METRICS_HOST}:20850
