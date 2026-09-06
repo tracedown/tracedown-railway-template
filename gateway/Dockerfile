@@ -2,7 +2,7 @@
 # Railway has no one-shot jobs or startup ordering, so the gateway container
 # migrates the schema and ensures the internal CA before it starts listening.
 # Every other service simply retries/restarts until this one has done both.
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl unzip \
