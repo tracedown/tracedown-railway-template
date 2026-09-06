@@ -1,7 +1,7 @@
 # email-service from the pinned backend release. Build context is the repo root (this
 # Dockerfile is selected by path), so the single VERSION file drives every
 # service in the template.
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
