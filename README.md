@@ -1,6 +1,8 @@
 # Tracedown on Railway
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/tracedown-core-template?referralCode=htSVme)
+> Archived - running Tracedown on Railway was proven to be too expensive, hence the template was unpublished.
+
+## Old README
 
 Deploys [Tracedown](https://tracedown.dev) — self-hosted API monitoring — on
 [Railway](https://railway.com) as the full per-service stack: all eight JVM
